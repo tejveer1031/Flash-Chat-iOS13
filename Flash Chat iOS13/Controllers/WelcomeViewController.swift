@@ -12,11 +12,15 @@ import CLTypingLabel
 class WelcomeViewController: UIViewController {
 
     @IBOutlet weak var titleLabel: CLTypingLabel!
-    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.isNavigationBarHidden = false
+    }
     override func viewDidLoad() {
+        super.viewDidLoad()
         titleLabel.text = Constant.appName
-        
-   /*     super.viewDidLoad()
+       
+   /*
         titleLabel.text = ""
        let titleText =  "⚡️FlashChat"
         var charIndex = 0
@@ -27,5 +31,9 @@ class WelcomeViewController: UIViewController {
            charIndex += 1
         }*/
     
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+       navigationController?.isNavigationBarHidden = true
     }
 }

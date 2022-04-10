@@ -20,7 +20,7 @@ class ChatViewController: UIViewController {
         tableView.register(UINib(nibName: Constant.cellNibName, bundle: nil), forCellReuseIdentifier: Constant.cellIdentifier)
         tableView.dataSource = self
         title = Constant.appName
-        navigationItem.hidesBackButton = true
+       // navigationItem.hidesBackButton = true
         loadMessages()
     }
     
@@ -39,10 +39,11 @@ class ChatViewController: UIViewController {
                         if let sender = data[Constant.FStore.senderField] as? String, let messageBody = data[Constant.FStore.bodyField] as? String{
                             let newMessages = Message(sender: sender, body: messageBody)
                             self.messages.append(newMessages)
-                           
+                            
                             DispatchQueue.main.async {
                                 self.tableView.reloadData()
-                               
+                                let indexPath = IndexPath(row: self.messages.count - 1, section: 0)
+                                self.tableView.scrollToRow(at: indexPath, at: .top, animated: true)
                             }
                             
                         }
@@ -53,7 +54,7 @@ class ChatViewController: UIViewController {
     }
     
     @IBAction func sendPressed(_ sender: UIButton) {
-
+        
         if let messageBody = messageTextfield.text, let messageSender = Auth.auth().currentUser?.email{
             db.collection(Constant.FStore.collectionName).addDocument(data: [
                 Constant.FStore.senderField: messageSender,
@@ -64,9 +65,13 @@ class ChatViewController: UIViewController {
                     print("Error adding document: \(err)")
                 } else {
                     print("Document added with ID: ")
+                    DispatchQueue.main.async{
+                    self.messageTextfield.text = ""
+                    }
                 }
             }
         }
+        
         
     }
     
@@ -74,23 +79,43 @@ class ChatViewController: UIViewController {
         
         let firebaseAuth = Auth.auth()
         do {
-          try firebaseAuth.signOut()
+            try firebaseAuth.signOut()
             navigationController?.popToRootViewController(animated: true)
         } catch let signOutError as NSError {
-          print("Error signing out: %@", signOutError)
+            print("Error signing out: %@", signOutError)
         }
     }
     
 }
 
 extension ChatViewController: UITableViewDataSource{
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return messages.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let message = messages[indexPath.row]
+        
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: Constant.cellIdentifier, for: indexPath) as! MessageCell
-        cell.Label.text = messages[indexPath.row].body
+        
+        
+        cell.Label.text = message.body
+        
+        //this is a message from current user
+        if message.sender == Auth.auth().currentUser?.email{
+            cell.LeftImageView.isHidden = true
+            cell.rightImageView.isHidden = false
+            cell.messageBuble.backgroundColor = UIColor(named: Constant.BrandColors.purple)
+            cell.Label.textColor = UIColor(named: Constant.BrandColors.lightPurple)
+        }else{
+            cell.LeftImageView.isHidden = false
+            cell.rightImageView.isHidden = true
+            cell.messageBuble.backgroundColor = UIColor(named: Constant.BrandColors.lightPurple)
+            cell.Label.textColor = UIColor(named: Constant.BrandColors.purple)
+        }
+        
         return cell
     }
     
