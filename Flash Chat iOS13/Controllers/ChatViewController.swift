@@ -10,12 +10,8 @@ import UIKit
 import Firebase
 
 class ChatViewController: UIViewController {
-    var messages : [Message] = [
-    Message(sender: "tejveer@gmail.com", body: "hey"),
-    Message(sender: "love@gmail.com", body: "hello"),
-    Message(sender: "hateLove@gmail.com", body: "fuck You")
-    ]
-    
+    let db = Firestore.firestore()
+    var messages : [Message] = []
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var messageTextfield: UITextField!
     
@@ -25,9 +21,53 @@ class ChatViewController: UIViewController {
         tableView.dataSource = self
         title = Constant.appName
         navigationItem.hidesBackButton = true
+        loadMessages()
+    }
+    
+    func loadMessages(){
+        messages = []
+        db.collection(Constant.FStore.collectionName).order(by: "date").addSnapshotListener{(querySnapshot,error) in
+            self.messages = []
+            
+            if let e = error {
+                print("there is issue with firebase")
+            }else {
+                if let snapshotDocuments =
+                    querySnapshot?.documents{
+                    for doc in snapshotDocuments{
+                        let data = doc.data()
+                        if let sender = data[Constant.FStore.senderField] as? String, let messageBody = data[Constant.FStore.bodyField] as? String{
+                            let newMessages = Message(sender: sender, body: messageBody)
+                            self.messages.append(newMessages)
+                           
+                            DispatchQueue.main.async {
+                                self.tableView.reloadData()
+                               
+                            }
+                            
+                        }
+                    }
+                }
+            }
+        }
     }
     
     @IBAction func sendPressed(_ sender: UIButton) {
+
+        if let messageBody = messageTextfield.text, let messageSender = Auth.auth().currentUser?.email{
+            db.collection(Constant.FStore.collectionName).addDocument(data: [
+                Constant.FStore.senderField: messageSender,
+                Constant.FStore.bodyField: messageBody,
+                Constant.FStore.dateField: Date().timeIntervalSince1970
+            ]) { err in
+                if let err = err {
+                    print("Error adding document: \(err)")
+                } else {
+                    print("Document added with ID: ")
+                }
+            }
+        }
+        
     }
     
     @IBAction func LogOutPressed(_ sender: UIBarButtonItem) {
